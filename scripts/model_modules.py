@@ -11,7 +11,8 @@ from transformers import WhisperTokenizer, WhisperForConditionalGeneration
 
 @dataclass
 class ModelDimensions:
-    n_mels: int = 256
+    n_features: int = 256
+    n_feature_dim: int = 1
     n_audio_ctx: int = 500
     n_audio_state: int = 384
     n_audio_head: int = 6
@@ -133,10 +134,10 @@ class ResidualAttentionBlock(nn.Module):
 
 class EcogConv(nn.Module):
     def __init__(
-        self, n_mels: int, n_ctx: int, n_state: int, n_head: int, n_layer: int
+        self, n_features: int, n_ctx: int, n_state: int, n_head: int, n_layer: int
     ):  # n_mel = 256, n_ctx = 500?, n_state = 384, n_head = 6, n_layer = 4
         super().__init__()
-        self.conv1 = Conv1d(n_mels, n_state, kernel_size=3, padding=1)
+        self.conv1 = Conv1d(n_features, n_state, kernel_size=3, padding=1)
         self.conv2 = Conv1d(n_state, n_state, kernel_size=3, stride=1, padding=1)
         self.register_buffer("positional_embedding", sinusoids(n_ctx, n_state))
 
@@ -147,7 +148,7 @@ class EcogConv(nn.Module):
 
     def forward(self, x: Tensor):
         """
-        x : torch.Tensor, shape = (batch_size, n_mels, n_ctx)
+        x : torch.Tensor, shape = (batch_size, n_features, n_ctx)
             the mel spectrogram of the audio
         """
         x = F.gelu(self.conv1(x))
@@ -185,7 +186,7 @@ class EcogModel(nn.Module):
         super().__init__()
         self.dims = dims
         self.encoder = EcogConv(
-            self.dims.n_mels,
+            self.dims.n_features * self.dims.n_feature_dim,
             self.dims.n_audio_ctx,
             self.dims.n_audio_state,
             self.dims.n_audio_head,
@@ -193,6 +194,19 @@ class EcogModel(nn.Module):
         )
         whisper_model = whisper.load_model("tiny.en")
         self.decoder = whisper_model.get_submodule("decoder")
+
+    def init_encoder(self):
+        for name, param in self.encoder.named_parameters():
+            # print(name, param.shape)
+            if "weight" in name and param.data.dim() == 2:
+                nn.init.kaiming_uniform_(param)
+        nn.init.kaiming_normal_(self.encoder.conv1.weight.data, mode="fan_out")
+        nn.init.kaiming_normal_(self.encoder.conv2.weight.data, mode="fan_out")
+
+    def freeze_decoder(self):
+        for param in self.decoder.parameters():
+            # print(param.shape)
+            param.requires_grad = False
 
     def forward(
         self, mel: torch.Tensor, tokens: torch.Tensor
