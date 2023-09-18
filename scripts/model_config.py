@@ -26,8 +26,8 @@ def parse_arguments():
     # Set parameters
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.max_neural_len = 919  # length of max neural signal
-    args.max_source_positions = 919  # length of encoder hidden states
-    # args.max_source_positions = 460  # length of encoder hidden states
+    # args.max_source_positions = 919  # length of encoder hidden states
+    args.max_source_positions = 460  # length of encoder hidden states
     args.grid_elec_num = 64  # num of elec per grid
 
     # load electrode grid

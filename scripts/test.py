@@ -6,7 +6,6 @@ from scipy.io import loadmat
 import torch
 import whisper
 import argparse
-from model_build import EcogModel, ModelDimensions
 from transformers import WhisperTokenizer, WhisperForConditionalGeneration
 import pickle
 

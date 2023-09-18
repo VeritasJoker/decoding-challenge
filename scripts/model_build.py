@@ -7,14 +7,14 @@ from torch import Tensor, nn
 import whisper
 import whisper
 from transformers import (
+    WhisperConfig,
     WhisperProcessor,
-    WhisperForConditionalGeneration,
-    WhisperModel,
     WhisperFeatureExtractor,
     WhisperTokenizer,
+    WhisperModel,
+    WhisperForConditionalGeneration,
 )
 
-from model_modules import EcogConfig
 from model_config import parse_arguments
 
 
@@ -87,9 +87,10 @@ def load_ecog_model_by_whisper(args):
     whisper_model, processor, tokenizer = load_whisper_model_by_hf(args.model_size)
     whisper_model = whisper_model.to(args.device)
     ecog_model = WhisperForConditionalGeneration(
-        EcogConfig(
+        WhisperConfig(
             num_mel_bins=args.num_mel_bins,
             max_source_positions=args.max_source_positions,
+            d_model=384,
         )
     ).to(args.device)
 
@@ -100,13 +101,15 @@ def load_ecog_model_by_whisper(args):
         for param in ecog_model.model.decoder.parameters():
             param.requires_grad = False
 
+    # change conv stride
+    if args.max_source_positions == args.max_neural_len:
+        ecog_model.model.encoder.conv2.stride = (1,)
+
     # init encoder
     for name, param in ecog_model.model.encoder.named_parameters():
         if "weight" in name and param.data.dim() == 2:
             nn.init.kaiming_uniform_(param)
 
-    if args.max_source_positions == args.max_neural_len:
-        ecog_model.model.encoder.conv2.stride = (1,)
     nn.init.kaiming_normal_(ecog_model.model.encoder.conv1.weight.data, mode="fan_out")
     nn.init.kaiming_normal_(ecog_model.model.encoder.conv2.weight.data, mode="fan_out")
 

@@ -17,14 +17,14 @@ CMD := sbatch submit.sh
 
 # grid (6v for 1 & 2, BA44 for 3 & 4)
 %-model: GRID := all
-%-model: GRID := 6v
 %-model: GRID := BA44
+%-model: GRID := 6v
 
 # neural feature (spike, tx1, tx2, tx3, tx4)
 %-model: NF := spikePow-tx1
 
 # decoder freezing
-# %-model: FD := --freeze-decoder
+%-model: FD := --freeze-decoder
 
 
 # model_size
@@ -46,5 +46,5 @@ train-model:
 		--feature $(NF) \
 		--model-size $(MODEL_SIZE) \
 		$(FD) \
-		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF)-nofreeze; \
+		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF)-conv2; \
 
