@@ -12,8 +12,7 @@ from typing import Any, Dict, List, Union
 from datasets import Dataset, DatasetDict
 
 from data_main import load_data
-from model_modules import EcogModel, ModelDimensions
-from model_build import load_whisper_model_by_hf
+from model_build import load_ecog_model_by_whisper
 from model_config import parse_arguments, write_model_config
 
 
@@ -108,14 +107,14 @@ def compute_metric(pred):
     label_str = [get_first_word(label) for label in label_str]
     first_cer = 100 * metric_cer.compute(predictions=pred_str, references=label_str)
 
-    return {"wer": wer, "cer": cer, "fisrt_cer": first_cer}
+    return {"wer": wer, "cer": cer, "first_cer": first_cer}
 
 
 def get_trainer(args, data_all):
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 
     training_args = Seq2SeqTrainingArguments(
-        output_dir=f"./models/{args.saving_dir}",
+        output_dir=args.saving_dir,
         per_device_train_batch_size=16,
         gradient_accumulation_steps=1,
         learning_rate=1e-5,
@@ -129,7 +128,7 @@ def get_trainer(args, data_all):
         generation_max_length=225,
         generation_num_beams=3,
         save_strategy="no",
-        save_steps=5000,
+        save_steps=500,
         eval_steps=100,
         logging_steps=25,
         # load_best_model_at_end=True,
@@ -178,12 +177,11 @@ def main():
     # Read command line arguments
     args = parse_arguments()
 
-    write_model_config(vars(args))
+    # write_model_config(vars(args))
 
     print("Init model / metric")
     global model, processor, tokenizer, metric_cer, metric_wer, seg_type  # global variables
-    _, processor, tokenizer = load_whisper_model_by_hf(args.model_size)
-    model = EcogModel(ModelDimensions(n_feature_dim=args.feature_dim)).to(args.device)
+    model, processor, tokenizer = load_ecog_model_by_whisper(args)
     metric_cer = evaluate.load("./metrics/cer")
     metric_wer = evaluate.load("./metrics/wer")
 

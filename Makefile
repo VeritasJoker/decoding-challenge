@@ -12,15 +12,20 @@ USR := $(shell whoami | head -c 2)
 # Choose the command to run: python runs locally, echo is for debugging, sbatch
 # is for running on SLURM
 CMD := echo
-CMD := sbatch submit.sh
 CMD := python
+CMD := sbatch submit.sh
 
 # grid (6v for 1 & 2, BA44 for 3 & 4)
 %-model: GRID := all
 %-model: GRID := 6v
+%-model: GRID := BA44
 
 # neural feature (spike, tx1, tx2, tx3, tx4)
-%-model: NF := spikePow
+%-model: NF := spikePow-tx1
+
+# decoder freezing
+# %-model: FD := --freeze-decoder
+
 
 # model_size
 %-model: MODEL_SIZE := tiny.en
@@ -31,6 +36,7 @@ build-model:
 		--grid $(GRID) \
 		--feature $(NF) \
 		--model-size $(MODEL_SIZE) \
+		$(FD) \
 		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF); \
 
 
@@ -39,5 +45,6 @@ train-model:
 		--grid $(GRID) \
 		--feature $(NF) \
 		--model-size $(MODEL_SIZE) \
-		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF); \
+		$(FD) \
+		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF)-nofreeze; \
 

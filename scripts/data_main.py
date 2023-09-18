@@ -31,7 +31,7 @@ def measure_data(groups):
 
 def pad_neural_data(args, neural):
     neural = neural.T
-    neural = np.pad(neural, [(0, 0), (0, args.neural_max_len - neural.shape[1])])
+    neural = np.pad(neural, [(0, 0), (0, args.max_neural_len - neural.shape[1])])
     return neural[args.eleclist]  # correct grid
 
 
@@ -74,8 +74,8 @@ def load_data(args, group):
 
 
 def main():
-    # measure_data(["train", "test", "competitionHoldOut"])
-    # NEURAL_MAX = 906
+    measure_data(["train", "test", "competitionHoldOut"])
+    # NEURAL_MAX = 919
     # data = load_data("train", NEURAL_MAX)
     return
 
