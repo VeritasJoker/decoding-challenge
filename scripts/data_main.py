@@ -3,13 +3,13 @@ import glob
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
-from datasets import Dataset, DatasetDict
 
 
 def measure_data(groups):
-    """Measure and print the longest ecog data length
+    """Measure and print the longest ecog data length (max_neural_len)
+
     Args:
-        groups: list containing types of data
+        groups ([str]): list of strings containing types of data
     """
     sentence_len_max = 0
     for group in groups:
@@ -30,12 +30,31 @@ def measure_data(groups):
 
 
 def pad_neural_data(args, neural):
+    """Transpose and pad neural signal to max_neural_len
+
+    Arguments:
+        args (Namespace): commandline arguments
+        neural (np.array): np array of neural signal
+
+    Returns:
+        neural (np.array): padded neural signal correctly sorted by electrode grid
+    """
     neural = neural.T
     neural = np.pad(neural, [(0, 0), (0, args.max_neural_len - neural.shape[1])])
     return neural[args.eleclist]  # correct grid
 
 
 def load_data_block(args, filename):
+    """Load a block of neural data
+
+    Arguments:
+        args (Namespace): commandline arguments
+        filename (str): matfile full path
+
+    Returns:
+        signals_padded ([np.array]): list of np arrays of neural signal
+        sentences (np.array): np array of sentences
+    """
     mat_signal = loadmat(filename)
     sentences = mat_signal["sentenceText"]  # y, sentence
     neurals = mat_signal["spikePow"]  # x, spike power (binned 20ms)
@@ -55,14 +74,22 @@ def load_data_block(args, filename):
 
         signals_padded.append(signal)  # add signal
 
-    # TODO z-score signal by block if needed
-
     return signals_padded, sentences
 
 
 def load_data(args, group):
+    """Load neural data
+
+    Arguments:
+        args (Namespace): commandline arguments
+        group (str): type of neural data (train/test/competitionHoldOut)
+
+    Returns:
+        signals ([np.array]): list of np arrays of neural signal
+        sentences ([np.array]): list of np array of sentences
+    """
     print(f"\tData {group}")
-    files = glob.glob(os.path.join("data", "competitionData", group, "t12*.mat"))
+    files = glob.glob(os.path.join(args.data_dir, group, "t12*.mat"))
     signals = []
     sentences = []
     for file in files:  # loop through blocks

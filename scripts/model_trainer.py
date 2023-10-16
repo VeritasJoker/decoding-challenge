@@ -13,7 +13,7 @@ from datasets import Dataset, DatasetDict
 
 from data_main import load_data
 from model_build import load_ecog_model_by_whisper
-from model_config import parse_arguments, write_model_config
+from model_config import parse_arguments
 
 
 def model_tokenize_word(labels, tokenizer):
@@ -119,7 +119,7 @@ def get_trainer(args, data_all):
         gradient_accumulation_steps=1,
         learning_rate=1e-5,
         warmup_steps=500,
-        max_steps=5000,
+        max_steps=3000,
         gradient_checkpointing=True,
         fp16=False,
         evaluation_strategy="steps",
@@ -151,6 +151,13 @@ def get_trainer(args, data_all):
 
 
 def prepare_data(args):
+    """Load training and testing data
+    Args:
+        args (Namespace):  commandline arguments
+
+    Return:
+        data_all (DatasetDict): dataset for train and test
+    """
     # load data
     train_x, train_y = load_data(args, "train")
     test_x, test_y = load_data(args, "test")
@@ -177,18 +184,16 @@ def main():
     # Read command line arguments
     args = parse_arguments()
 
-    # write_model_config(vars(args))
-
-    print("Init model / metric")
+    print("Init model / metric")  # Initialize model and metric
     global model, processor, tokenizer, metric_cer, metric_wer, seg_type  # global variables
     model, processor, tokenizer = load_ecog_model_by_whisper(args)
     metric_cer = evaluate.load("./metrics/cer")
     metric_wer = evaluate.load("./metrics/wer")
 
-    print("Prepare data")
+    print("Prepare data")  # Prepare Data
     data_all = prepare_data(args)
 
-    print("Start training")
+    print("Start training")  # Training
     trainer, _ = get_trainer(args, data_all)
     trainer.train()
 

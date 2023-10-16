@@ -21,7 +21,7 @@ from model_config import parse_arguments
 def load_whisper_model_by_hf(model_size):
     """Loading whisper model from HuggingFace
     Args:
-        model_size: whisper model type
+        model_size (str): whisper model type
 
     Return:
         model: Whisper model
@@ -47,7 +47,7 @@ def load_whisper_model_by_hf(model_size):
 def load_whisper_model_by_git(model_size):
     """Loading whisper model from HuggingFace
     Args:
-        model_size: whisper model type
+        model_size (str): whisper model type
 
     Return:
         model: Whisper model
@@ -62,8 +62,8 @@ def load_whisper_model_by_git(model_size):
 def load_whisper_model_by_path(model_path, checkpoint):
     """Loading whisper model by path
     Args:
-        model_path: path of the model
-        checkpoint: checkpoint step
+        model_path (str): path of the model
+        checkpoint (int): checkpoint step
 
     Return:
         model: Whisper model
@@ -84,10 +84,20 @@ def load_whisper_model_by_path(model_path, checkpoint):
 
 
 def load_ecog_model_by_whisper(args):
+    """Loading EcogConv model from whisper
+    Args:
+        args (Namespace):  commandline arguments
+
+    Return:
+        model: EcogConv model
+        processor: Whisper processor
+        tokenizer: Whisper tokenizer
+    """
     whisper_model, processor, tokenizer = load_whisper_model_by_hf(args.model_size)
     whisper_model = whisper_model.to(args.device)
     ecog_model = WhisperForConditionalGeneration(
         WhisperConfig(
+            encoder_layers=4,
             num_mel_bins=args.num_mel_bins,
             max_source_positions=args.max_source_positions,
             d_model=384,
@@ -103,10 +113,15 @@ def load_ecog_model_by_whisper(args):
 
     # change conv stride
     if args.max_source_positions == args.max_neural_len:
+        print("Changing Conv2 stride to 1")
         ecog_model.model.encoder.conv2.stride = (1,)
 
     # init encoder
+    print("Init Encoder")
     for name, param in ecog_model.model.encoder.named_parameters():
+        if "embed_positions" in name:
+            print("Skipping pos embs")
+            continue
         if "weight" in name and param.data.dim() == 2:
             nn.init.kaiming_uniform_(param)
 
@@ -126,13 +141,13 @@ def main():
     #         max_source_positions=args.max_source_positions,
     #     )
     # ).to(args.device)
-    model1, _, _ = load_whisper_model_by_hf(args.model_size)
-
-    model2, processor, tokenizer = load_ecog_model_by_whisper(args)
+    # model1, _, _ = load_whisper_model_by_hf(args.model_size)
+    # model2, _, _ = load_whisper_model_by_git(args.model_size)
+    model3, processor, tokenizer = load_ecog_model_by_whisper(args)
     breakpoint()
 
     print("Saving model")
-    model2.save_pretrained(args.saving_dir)
+    model3.save_pretrained(args.saving_dir)
     print("Saving processor")
     processor.save_pretrained(args.saving_dir)
     print("Saving tokenizer")

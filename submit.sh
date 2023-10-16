@@ -16,7 +16,7 @@ then
     echo "It's della-gpu"
     module purge
     module load anaconda3/2021.11
-    conda activate whisperx
+    conda activate /scratch/kw1166/.conda/envs/whisperx
 else
     module purge
     module load anacondapy

@@ -3,17 +3,29 @@
 ##########################################################
 USR := $(shell whoami | head -c 2)
 
-
-
-
-##########################################################
-######################### MODEL ##########################
-##########################################################
 # Choose the command to run: python runs locally, echo is for debugging, sbatch
 # is for running on SLURM
 CMD := echo
 CMD := python
 CMD := sbatch submit.sh
+
+##########################################################
+######################### DATA ###########################
+##########################################################
+
+NORM := zscore
+NORM := zscore-elec
+
+
+norm-data:
+	python scripts/data_zscore.py \
+		--norm zscore \
+		--saving-dir competitionData-$(NORM); \
+
+
+##########################################################
+######################### MODEL ##########################
+##########################################################
 
 # grid (6v for 1 & 2, BA44 for 3 & 4)
 %-model: GRID := all
@@ -37,6 +49,7 @@ build-model:
 		--feature $(NF) \
 		--model-size $(MODEL_SIZE) \
 		$(FD) \
+		--data-dir competitionData \
 		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF); \
 
 
@@ -46,5 +59,6 @@ train-model:
 		--feature $(NF) \
 		--model-size $(MODEL_SIZE) \
 		$(FD) \
-		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF)-conv2; \
+		--data-dir competitionData \
+		--saving-dir $(MODEL_SIZE)-$(GRID)-$(NF)-$(NORM); \
 

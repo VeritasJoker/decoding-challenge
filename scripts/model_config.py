@@ -8,8 +8,9 @@ import torch
 
 def parse_arguments():
     """Read commandline arguments
+
     Returns:
-        Namespace: input as well as default arguments
+        args (Namespace): input as well as default arguments
     """
 
     parser = argparse.ArgumentParser()
@@ -18,16 +19,19 @@ def parse_arguments():
     parser.add_argument("--grid", type=str, required=True)
     parser.add_argument("--feature", type=str, required=True)
     parser.add_argument("--model-size", type=str, required=True)
+    parser.add_argument("--data-dir", type=str, required=True)
     parser.add_argument("--saving-dir", type=str, required=True)
     parser.add_argument("--freeze-decoder", action="store_true")
 
     args = parser.parse_args()
 
     # Set parameters
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    args.data_dir = os.path.join(
+        "/scratch/gpfs/kw1166/decoding-challenge/data/", args.data_dir
+    )
     args.max_neural_len = 919  # length of max neural signal
-    # args.max_source_positions = 919  # length of encoder hidden states
-    args.max_source_positions = 460  # length of encoder hidden states
+    args.max_source_positions = 919  # length of encoder hidden states
+    # args.max_source_positions = 460  # length of encoder hidden states
     args.grid_elec_num = 64  # num of elec per grid
 
     # load electrode grid
@@ -57,6 +61,9 @@ def parse_arguments():
     args.num_mel_bins = args.grid_elec_num * args.feature_dim
 
     args.saving_dir = os.path.join("models", args.saving_dir)
+    write_model_config(vars(args))
+
+    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     return args
 
@@ -64,7 +71,7 @@ def parse_arguments():
 def write_model_config(dictionary):
     """Write configuration to a file
     Args:
-        CONFIG (dict): configuration
+        dictionary (dict): configuration of args
     """
     json_object = json.dumps(dictionary, sort_keys=True, indent=4)
     config_file = f"{dictionary['saving_dir']}_config.json"
