@@ -112,13 +112,8 @@ def load_ecog_model_by_whisper(args):
         for param in ecog_model.model.decoder.parameters():
             param.requires_grad = False
 
-    # change conv stride
-    if args.max_source_positions == args.max_neural_len:
-        print("Changing Conv2 stride to 1")
-        ecog_model.model.encoder.conv2.stride = (1,)
-
     # init encoder
-    print("Init Encoder")
+    print("Reinitialize Encoder")
     for name, param in ecog_model.model.encoder.named_parameters():
         if "embed_positions" in name:  # skip positional embeddings
             print("\tSkipping pos embs")
@@ -127,6 +122,11 @@ def load_ecog_model_by_whisper(args):
         if "weight" in name and param.data.dim() == 2:
             nn.init.kaiming_uniform_(param)
 
+    # init conv layers
+    print("Initialize conv layers")
+    if args.max_source_positions == args.max_neural_len:
+        print("\tChanging Conv2 stride to 1")
+        ecog_model.model.encoder.conv2.stride = (1,)  # change conv stride
     nn.init.kaiming_normal_(ecog_model.model.encoder.conv1.weight.data, mode="fan_out")
     nn.init.kaiming_normal_(ecog_model.model.encoder.conv2.weight.data, mode="fan_out")
 
