@@ -104,10 +104,11 @@ def load_ecog_model_by_whisper(args):
         )
     ).to(args.device)
 
-    # reset decoder and freeze
+    # switch out decoder and freeze
+    print("Replace Decoder")
     ecog_model.model.decoder = whisper_model.model.decoder
     if args.freeze_decoder:
-        print("Freezing Decoder")
+        print("\tFreezing Decoder")
         for param in ecog_model.model.decoder.parameters():
             param.requires_grad = False
 
@@ -119,8 +120,9 @@ def load_ecog_model_by_whisper(args):
     # init encoder
     print("Init Encoder")
     for name, param in ecog_model.model.encoder.named_parameters():
-        if "embed_positions" in name:
-            print("Skipping pos embs")
+        if "embed_positions" in name:  # skip positional embeddings
+            print("\tSkipping pos embs")
+            param.requires_grad = False  # freeze pos embeds
             continue
         if "weight" in name and param.data.dim() == 2:
             nn.init.kaiming_uniform_(param)
@@ -144,7 +146,6 @@ def main():
     # model1, _, _ = load_whisper_model_by_hf(args.model_size)
     # model2, _, _ = load_whisper_model_by_git(args.model_size)
     model3, processor, tokenizer = load_ecog_model_by_whisper(args)
-    breakpoint()
 
     print("Saving model")
     model3.save_pretrained(args.saving_dir)

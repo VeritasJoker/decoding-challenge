@@ -22,6 +22,7 @@ def parse_arguments():
     parser.add_argument("--data-dir", type=str, required=True)
     parser.add_argument("--saving-dir", type=str, required=True)
     parser.add_argument("--freeze-decoder", action="store_true")
+    parser.add_argument("--training-step", type=int, default="3000")
 
     args = parser.parse_args()
 
